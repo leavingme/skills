@@ -117,6 +117,32 @@ def register_file(qiniu_key, file_name, file_size, duration, cover_key=None):
     resp = requests.post(url, headers=HEADERS, json=register_data)
     return resp.status_code == 200 and resp.json().get('code') == 200
 
+def reorder_tracks(uids):
+    """保存最终排序"""
+    url = f'https://gateway.benewtech.cn/resources-app/cloud/web/{ALBUM_ID}/tracks/reorder?familyId={FAMILY_ID}'
+    resp = requests.post(url, headers=HEADERS, json={"trackIds": uids})
+    return resp.status_code == 200
+
+def get_all_tracks():
+    """获取所有音轨对象详细列表"""
+    tracks = []
+    offset = 0
+    limit = 50
+    while True:
+        url = f'https://gateway.benewtech.cn/resources-app/cloud/web/albums/{ALBUM_ID}/tracks'
+        params = {'offset': offset, 'limit': limit, 'familyId': FAMILY_ID}
+        resp = requests.get(url, headers=HEADERS, params=params)
+        if resp.status_code == 200:
+            data = resp.json().get('data', {})
+            batch = data.get('datas', [])
+            tracks.extend(batch)
+            if len(tracks) >= data.get('count', 0) or not batch:
+                break
+            offset += limit
+        else:
+            break
+    return tracks
+
 def sync():
     if not all([COOKIE, FAMILY_ID, ALBUM_ID, WATCH_DIR]):
         print("错误: 缺少必要的环境变量 (COOKIE, FAMILY_ID, ALBUM_ID, WATCH_DIR)")
@@ -184,6 +210,27 @@ def sync():
                 print(f"失败: {file_name} 注册到云盘失败。")
         else:
             print(f"失败: {file_name} 上传失败。")
+
+    print("\n📦 所有新文件上传处理结束。")
+    print("正在进行云端文件最终排序 (智能按集数/名称梳理)...")
+    
+    # 全部上传完以后，从服务器拉取全量真实数据进行智能排序
+    all_tracks = get_all_tracks()
+    
+    def sort_key(t):
+        name = t.get('name', '')
+        num = extract_number(name)
+        if num:
+            return (0, int(num))
+        return (1, name)
+        
+    all_tracks.sort(key=sort_key)
+    sorted_uids = [t.get('uid') for t in all_tracks]
+    
+    if sorted_uids and reorder_tracks(sorted_uids):
+        print("✅ 上传与云端顺序自动整理已全部完美完成！")
+    else:
+        print("⚠️ 文件已传完，但自动整理排序失败，您可能需要手动运行一次 optimize.py。")
 
 if __name__ == '__main__':
     sync()
