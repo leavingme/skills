@@ -66,8 +66,8 @@ def normalize_name(name):
     return name.strip()
 
 def optimize():
-    if not all([COOKIE, FAMILY_ID, ALBUM_ID, ALBUM_COVER, WATCH_DIR]):
-        print("错误: 缺少必要的环境变量 (COOKIE, FAMILY_ID, ALBUM_ID, ALBUM_COVER, WATCH_DIR)")
+    if not all([COOKIE, FAMILY_ID, ALBUM_ID, WATCH_DIR]):
+        print("错误: 缺少必要的环境变量 (COOKIE, FAMILY_ID, ALBUM_ID, WATCH_DIR)")
         return
 
     print("Step 1: 获取完整列表...")
@@ -137,14 +137,17 @@ def optimize():
         else:
             name = normalize_name(t.get('name'))
         
-        cover_key = ALBUM_COVER.split('/')[-1]
-        
         update_data = {
             "name": name,
-            "coverKey": cover_key
         }
         
-        print(f"  [强制更新名称和封面] {name} | UID: {uid}")
+        if ALBUM_COVER:
+            cover_key = ALBUM_COVER.split('/')[-1]
+            update_data["coverKey"] = cover_key
+            print(f"  [强制更新名称和封面] {name} | UID: {uid}")
+        else:
+            print(f"  [强制更新名称] {name} | UID: {uid}")
+        
         update_track(uid, update_data)
         sorted_uids.append(uid)
         time.sleep(0.3)
