@@ -212,11 +212,39 @@ def sync():
             print(f"失败: {file_name} 上传失败。")
 
     print("\n📦 所有新文件上传处理结束。")
-    print("正在进行云端文件最终排序 (智能按集数/名称梳理)...")
+    print("正在进行云端一致性健康检查...")
     
-    # 全部上传完以后，从服务器拉取全量真实数据进行智能排序
     all_tracks = get_all_tracks()
+    needs_optimize = False
     
+    seen_nums = set()
+    cover_keys = set()
+    
+    for t in all_tracks:
+        name = t.get('name', '')
+        
+        # 1. 检查去重
+        num = extract_number(name)
+        if num:
+            if num in seen_nums:
+                needs_optimize = True
+            seen_nums.add(num)
+            
+        # 2. 检查后缀如 (1) 是否被清洗
+        if re.search(r'\(\d+\)\s*$', name.strip()):
+            needs_optimize = True
+            
+        # 3. 检查封面统一性
+        c_key = t.get('coverKey')
+        if c_key:
+            cover_keys.add(c_key)
+        elif cover_key: # 如果存在相册基础封面但有个别音轨为空
+            needs_optimize = True
+
+    if len(cover_keys) > 1:
+        needs_optimize = True
+        
+    # 4. 检查顺序是否已经完美
     def sort_key(t):
         name = t.get('name', '')
         num = extract_number(name)
@@ -224,13 +252,20 @@ def sync():
             return (0, int(num))
         return (1, name)
         
-    all_tracks.sort(key=sort_key)
-    sorted_uids = [t.get('uid') for t in all_tracks]
-    
-    if sorted_uids and reorder_tracks(sorted_uids):
-        print("✅ 上传与云端顺序自动整理已全部完美完成！")
+    sorted_tracks = sorted(all_tracks, key=sort_key)
+    if [t.get('uid') for t in all_tracks] != [t.get('uid') for t in sorted_tracks]:
+        needs_optimize = True
+        
+    if needs_optimize:
+        print("⚠️ 检测到当前专辑存在：乱序 / 封面缺少或不一 / 命名不规范 / 出现多余复本。")
+        print("🔗 自动触发深度优化流 (optimize.py) ...\n")
+        try:
+            import optimize
+            optimize.optimize()
+        except ImportError:
+            print("未能成功加载 optimize.py 模块。")
     else:
-        print("⚠️ 文件已传完，但自动整理排序失败，您可能需要手动运行一次 optimize.py。")
+        print("✅ 经多维检测，当前云盘音轨去重、排序、命名与封面均已达到完美稳态！全流程结束。")
 
 if __name__ == '__main__':
     sync()
