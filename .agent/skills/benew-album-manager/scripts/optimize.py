@@ -37,6 +37,16 @@ def get_tracks():
             break
     return tracks
 
+def get_album_cover():
+    url = f'https://gateway.benewtech.cn/resources-app/cloud/web/albums/{ALBUM_ID}'
+    params = {'familyId': FAMILY_ID}
+    resp = requests.get(url, headers=HEADERS, params=params)
+    if resp.status_code == 200:
+        data = resp.json().get('data', {})
+        # 返回类似 'http://img.benewtech.cn/xxx'
+        return data.get('coverUrl')
+    return None
+
 def delete_tracks(uids):
     if not uids:
         return True
@@ -66,9 +76,19 @@ def normalize_name(name):
     return name.strip()
 
 def optimize():
+    global ALBUM_COVER
     if not all([COOKIE, FAMILY_ID, ALBUM_ID, WATCH_DIR]):
         print("错误: 缺少必要的环境变量 (COOKIE, FAMILY_ID, ALBUM_ID, WATCH_DIR)")
         return
+
+    if not ALBUM_COVER:
+        print("未提供 ALBUM_COVER 环境变量，正在尝试通过云盘接口自动提取首图封面...")
+        fetched_cover = get_album_cover()
+        if fetched_cover:
+            ALBUM_COVER = fetched_cover
+            print(f"成功获取到专辑封面 URL: {ALBUM_COVER}")
+        else:
+            print("未能自动提取到专辑封面，本次优化将跳过封面更新。")
 
     print("Step 1: 获取完整列表...")
     tracks = get_tracks()
