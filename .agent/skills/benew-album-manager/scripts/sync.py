@@ -8,6 +8,7 @@ import re
 COOKIE = os.environ.get('COOKIE')
 FAMILY_ID = os.environ.get('FAMILY_ID')
 ALBUM_ID = os.environ.get('ALBUM_ID')
+ALBUM_COVER = os.environ.get('ALBUM_COVER')
 WATCH_DIR = os.environ.get('WATCH_DIR')
 # =========================================
 
@@ -38,6 +39,23 @@ def get_uptoken():
     )
     if resp.status_code == 200:
         return resp.json().get('data', {}).get('trackToken')
+    return None
+
+def get_album_cover_key():
+    """获取相册封面的最终 Key 以便在上传时捆绑"""
+    if ALBUM_COVER:
+        return ALBUM_COVER.split('/')[-1]
+    
+    url = f'https://gateway.benewtech.cn/resources-app/cloud/web/albums/{ALBUM_ID}'
+    params = {'familyId': FAMILY_ID}
+    try:
+        resp = requests.get(url, headers=HEADERS, params=params)
+        if resp.status_code == 200:
+            cover_url = resp.json().get('data', {}).get('coverUrl')
+            if cover_url:
+                return cover_url.split('/')[-1]
+    except Exception as e:
+        print(f"Warning: Could not get album cover: {e}")
     return None
 
 def extract_number(name):
@@ -78,18 +96,22 @@ def upload_to_qiniu(file_path, token):
         return resp.json().get('key')
     return None
 
-def register_file(qiniu_key, file_name, file_size, duration):
+def register_file(qiniu_key, file_name, file_size, duration, cover_key=None):
     """在本牛云盘注册文件"""
+    track_data = {
+        "key": qiniu_key,
+        "fname": file_name,
+        "size": file_size,
+        "duration": duration,
+        "fileFormat": "mp3"
+    }
+    
+    # 💥 直接在注册时硬塞入相册的封面图哈希
+    if cover_key:
+        track_data["coverKey"] = cover_key
+        
     register_data = {
-        "trackUploadResults": [
-            {
-                "key": qiniu_key,
-                "fname": file_name,
-                "size": file_size,
-                "duration": duration,
-                "fileFormat": "mp3"
-            }
-        ]
+        "trackUploadResults": [track_data]
     }
     url = f'https://gateway.benewtech.cn/resources-app/cloud/web/albums/{ALBUM_ID}/tracks/upload?familyId={FAMILY_ID}'
     resp = requests.post(url, headers=HEADERS, json=register_data)
@@ -142,6 +164,11 @@ def sync():
         print("错误: 无法获取 UpToken，请检查 Cookie 是否过期。")
         return
 
+    # 尝试自动嗅探专辑封面，准备在上传第一秒就将封面盖上
+    cover_key = get_album_cover_key()
+    if cover_key:
+        print(f"✔ 成功抓取当前专辑默认封面 ({cover_key})，将为新音频捆绑自动打封！")
+
     for file_name in sorted(to_upload):
         file_path = os.path.join(WATCH_DIR, file_name)
         file_size = os.path.getsize(file_path)
@@ -151,7 +178,7 @@ def sync():
         qiniu_key = upload_to_qiniu(file_path, token)
         if qiniu_key:
             duration = get_duration(file_path)
-            if register_file(qiniu_key, file_name, file_size, duration):
+            if register_file(qiniu_key, file_name, file_size, duration, cover_key):
                 print(f"成功: {file_name} 已同步。")
             else:
                 print(f"失败: {file_name} 注册到云盘失败。")
