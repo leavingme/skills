@@ -109,15 +109,19 @@ def fetch_credentials_cdp():
     captured_family_id = None
     start_time = time.time()
     
-    print("等待捕获中... (请在刚才打开的 Chrome 界面里随便点击一下你自己的任意一个专辑以触发数据包)")
-    # 最多等60秒
-    while time.time() - start_time < 60:
+    # 强制刷新当前云盘页面以触发带有 familyId 的内部 API 请求
+    print("正在静默刷新您的当前网页以拦截内部参数包（您无需操作）...")
+    ws.send(json.dumps({"id": 3, "method": "Page.reload"}))
+    
+    print("监听本牛云盘鉴权流量中...")
+    # 最多等10秒
+    while time.time() - start_time < 15:
         ws.settimeout(1.0)
         try:
             msg = json.loads(ws.recv())
             if msg.get('method') == 'Network.requestWillBeSent':
                 req_url = msg['params']['request']['url']
-                match = re.search(r'familyId=(\d+)', req_url)
+                match = re.search(r'[&?]familyId=(\d+)', req_url)
                 if match:
                     captured_family_id = match.group(1)
                     update_env("FAMILY_ID", captured_family_id)
