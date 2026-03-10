@@ -65,6 +65,12 @@ def extract_number(name):
         return match.group(1)
     return None
 
+def normalize_name(name):
+    """标准化名称：去除尾部 (1) 等重复标记，合并多余空格"""
+    name = re.sub(r'\s*\((\d+)\)\s*$', '', name)
+    name = re.sub(r'\s+', ' ', name)
+    return name.strip()
+
 def get_cloud_track_names():
     """获取专辑中已存在的音频名称列表"""
     url = f'https://gateway.benewtech.cn/resources-app/cloud/web/albums/{ALBUM_ID}/tracks'
@@ -164,17 +170,21 @@ def sync():
     print(f"云端共发现 {len(cloud_names)} 条音频。")
 
     cloud_numbers = set()
+    cloud_names_normalized = set()
     for name in cloud_names:
+        name = normalize_name(name)
         num = extract_number(name)
         if num:
             cloud_numbers.add(num)
+        else:
+            cloud_names_normalized.add(name)
 
     to_upload = []
     for f in local_files:
-        name_no_ext = os.path.splitext(f)[0]
+        name_no_ext = normalize_name(os.path.splitext(f)[0])
         num = extract_number(name_no_ext)
-        
-        if (num and num in cloud_numbers) or (name_no_ext in cloud_names):
+
+        if (num and num in cloud_numbers) or (name_no_ext in cloud_names_normalized):
             print(f"跳过已存在文件: {f}")
         else:
             to_upload.append(f)
@@ -204,7 +214,8 @@ def sync():
         qiniu_key = upload_to_qiniu(file_path, token)
         if qiniu_key:
             duration = get_duration(file_path)
-            if register_file(qiniu_key, file_name, file_size, duration, cover_key):
+            normalized_name = normalize_name(os.path.splitext(file_name)[0]) + '.mp3'
+            if register_file(qiniu_key, normalized_name, file_size, duration, cover_key):
                 print(f"成功: {file_name} 已同步。")
             else:
                 print(f"失败: {file_name} 注册到云盘失败。")
