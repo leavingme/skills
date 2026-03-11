@@ -1,5 +1,5 @@
 .DS_Store
 .env.benew
-baidunetdisk/config.json
+baidu-netdisk/config.json
 **/__pycache__/
 *.pyc

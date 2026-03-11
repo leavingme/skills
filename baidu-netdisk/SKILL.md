@@ -162,7 +162,7 @@ python scripts/main.py delete path=/要删除的路径
 
 ### 配置 Agent 使用该 Skill
 
-在 Agent 技能配置中启用 `baidunetdisk`。
+在 Agent 技能配置中启用 `baidu-netdisk`。
 
 ### 使用示例
 
@@ -218,4 +218,4 @@ API 调用受限，请检查网络连接或稍后再试
 - **版本**: 1.0.3
 - **作者**: MaxStorm Team, leavingme
 - **许可证**: MIT
-- **源码**: https://github.com/leavingme/skills/tree/main/baidunetdisk
+- **源码**: https://github.com/leavingme/skills/tree/main/baidu-netdisk
