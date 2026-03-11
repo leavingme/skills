@@ -1,11 +1,14 @@
 {
   "name": "baidu-netdisk-mcp",
-  "version": "1.0.0",
-  "description": "Baidu Netdisk MCP Skill based on official SDK",
+  "version": "1.1.0",
+  "description": "Baidu Netdisk MCP Skill providing full file management, upload, and search capabilities.",
   "author": "leavingme",
   "entrypoint": "scripts/netdisk-mcp-server-stdio/netdisk.py",
   "language": "python",
   "dependencies": [
-    "uv"
+    "uv",
+    "mcp",
+    "requests",
+    "urllib3"
   ]
 }
