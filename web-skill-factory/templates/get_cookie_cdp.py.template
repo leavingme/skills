@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+[TEMPLATE] 通过 Chrome CDP 自动获取 [WEBSITE_NAME] 的 Cookie 和凭据
+要求：Chrome 以 --remote-debugging-port=9222 启动
+"""
+
+import os
+import json
+import time
+import subprocess
+import requests
+
+# --- 配置区 (根据实际情况修改) ---
+CDP_URL = "http://127.0.0.1:9222"
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), '..', 'config.json')
+TARGET_URL = "https://[INSERT_TARGET_DOMAIN]"  # 目标网站 URL
+COOKIE_NAMES = ["SESSION", "TOKEN"]  # 需要抓取的 Cookie 名称
+WAIT_TIMEOUT = 60  # 等待登录最长秒数
+
+def load_config():
+    if os.path.exists(CONFIG_PATH):
+        with open(CONFIG_PATH, 'r') as f:
+            try:
+                return json.load(f)
+            except Exception:
+                return {}
+    return {}
+
+def save_config(config):
+    with open(CONFIG_PATH, 'w') as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
+
+def get_cookies_via_ws(ws):
+    """通过 WebSocket 读取 Cookie"""
+    req_id = int(time.time() * 1000) % 100000
+    ws.send(json.dumps({
+        "id": req_id,
+        "method": "Network.getCookies",
+        "params": {
+            "urls": [TARGET_URL]
+        }
+    }))
+    
+    old_timeout = ws.gettimeout()
+    ws.settimeout(2.0)
+    try:
+        while True:
+            try:
+                msg = ws.recv()
+                result = json.loads(msg)
+                if result.get('id') == req_id:
+                    cookies = result.get('result', {}).get('cookies', [])
+                    return {c['name']: c['value'] for c in cookies if c['name'] in COOKIE_NAMES}
+            except Exception:
+                break
+    finally:
+        ws.settimeout(old_timeout)
+    return {}
+
+def launch_chrome():
+    """以 CDP 模式新开一个独立 Chrome 实例 (macOS 示例)"""
+    chrome_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    if os.path.exists(chrome_path):
+        print(f"尝试启动 Chrome: {chrome_path}")
+        user_data_dir = "/tmp/chrome-debug-profile-[WS_SLUG]"
+        subprocess.Popen(
+            ["open", "-na", chrome_path, "--args",
+             "--remote-debugging-port=9222", f"--user-data-dir={user_data_dir}", "--no-first-run", TARGET_URL],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        for _ in range(15):
+            time.sleep(1)
+            try:
+                requests.get(f"{CDP_URL}/json", timeout=1)
+                return True
+            except Exception:
+                pass
+    return False
+
+def fetch_cookies_cdp():
+    print("正在连接本地 Chrome DEBUG 端口 (9222)...")
+    try:
+        resp = requests.get(f"{CDP_URL}/json", timeout=2)
+        targets = resp.json()
+    except Exception:
+        print("尝试自动启动 Chrome...")
+        if not launch_chrome():
+            return False
+        resp = requests.get(f"{CDP_URL}/json", timeout=2)
+        targets = resp.json()
+
+    # 寻找目标标签页或新建
+    ws_url = None
+    for t in targets:
+        if t.get('type') == 'page' and '[TARGET_KEYWORD]' in t.get('url', ''):
+            ws_url = t.get('webSocketDebuggerUrl')
+            break
+    
+    if not ws_url:
+        resp = requests.put(f"{CDP_URL}/json/new?{TARGET_URL}")
+        ws_url = resp.json().get('webSocketDebuggerUrl')
+
+    try:
+        import websocket
+    except ImportError:
+        print("请执行: pip install websocket-client")
+        return False
+
+    ws = websocket.create_connection(ws_url, suppress_origin=True)
+    found = get_cookies_via_ws(ws)
+
+    if not found:
+        print("未检测到登录状，请在浏览器中完成登录...")
+        # 轮询等待登录... (此处省略详细循环逻辑，可参考百度网盘实现)
+        pass 
+
+    ws.close()
+    if found:
+        config = load_config()
+        config.update(found)
+        save_config(config)
+        print("成功获取并保存凭证！")
+        return True
+    return False
+
+if __name__ == "__main__":
+    fetch_cookies_cdp()

@@ -1,0 +1,11 @@
+{
+  "name": "baidu-netdisk-mcp",
+  "version": "1.0.0",
+  "description": "Baidu Netdisk MCP Skill based on official SDK",
+  "author": "leavingme",
+  "entrypoint": "scripts/netdisk-mcp-server-stdio/netdisk.py",
+  "language": "python",
+  "dependencies": [
+    "uv"
+  ]
+}

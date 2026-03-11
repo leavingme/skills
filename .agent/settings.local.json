@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx playwright:*)",
+      "Bash(python:*)",
+      "Bash(open:*)",
+      "Bash(COOKIE='connect.sid=s%3ABexm5lCIEntekycCrYmkTCs60aAHc41m.t487iYVmWtQPUrdm3R24F1Iw9fEnHXKI6w57VvKkSnU' FAMILY_ID='3056748' ALBUM_ID='1697319904' WATCH_DIR='/Users/leavingme/Downloads/Knock/第二季（更新中）' python:*)",
+      "Bash(python3:*)",
+      "Bash(COOKIE='connect.sid=s%3ABexm5lCIEntekycCrYmkTCs60aAHc41m.t487iYVmWtQPUrdm3R24F1Iw9fEnHXKI6w57VvKkSnU' FAMILY_ID='3056748' python:*)",
+      "Bash(pip install:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}

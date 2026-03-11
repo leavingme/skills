@@ -1,0 +1,7 @@
+{
+  "name": "web-skill-factory",
+  "version": "1.0.0",
+  "description": "Web服务技能工厂 - 提供标准化流程和模板，用于快速构建具有自动凭证抓取功能的Web技能",
+  "author": "leavingme",
+  "license": "MIT"
+}

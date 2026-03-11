@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+[TEMPLATE] [WEBSITE_NAME] 操作脚本
+支持功能：列表、搜索、管理
+"""
+
+import os
+import sys
+import json
+import requests
+from urllib.parse import quote
+
+class WebServiceAPI:
+    """[WEBSITE_NAME] API 封装"""
+    
+    BASE_URL = "https://[INSERT_API_BASE_URL]"
+    
+    def __init__(self, cookies_dict: dict):
+        self.cookies = cookies_dict
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://[INSERT_TARGET_DOMAIN]',
+        })
+        
+    def list_items(self, category="all"):
+        """示例：获取项目列表"""
+        url = f"{self.BASE_URL}/list"
+        params = {'cat': category}
+        try:
+            resp = self.session.get(url, params=params, cookies=self.cookies)
+            # 处理可能的 API 错误
+            try:
+                data = resp.json()
+            except ValueError:
+                # 沉淀自调试经验：当 JSON 解析失败时，捕获并保存原始响应以便排障
+                return {
+                    'success': False, 
+                    'error': f"非法的 JSON 响应。状态码: {resp.status_code}",
+                    'raw_response': resp.text[:1000] # 只保留前1000个字符避免过大
+                }
+
+            if data.get('code') == 0 or data.get('errno') == 0:
+                return {'success': True, 'data': data}
+            return {'success': False, 'error': f"API响应码异常: {data}"}
+        except Exception as e:
+            return {'success': False, 'error': f"请求异常: {str(e)}"}
+
+def main():
+    if len(sys.argv) < 2:
+        print(json.dumps({'success': False, 'error': '缺少操作参数'}))
+        sys.exit(1)
+    
+    action = sys.argv[1]
+    config_path = os.path.join(os.path.dirname(__file__), '..', 'config.json')
+    
+    # 读取配置
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+    except:
+        config = {}
+
+    # 这里的逻辑应检查关键凭证是否存在
+    # 如果不存在，应在生成的 SKILL.md 中引导 Agent 运行 get_cookie_cdp.py
+    
+    api = WebServiceAPI(config)
+    
+    if action == 'list':
+        result = api.list_items()
+    else:
+        result = {'success': False, 'error': f'未知操作: {action}'}
+        
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+if __name__ == '__main__':
+    main()

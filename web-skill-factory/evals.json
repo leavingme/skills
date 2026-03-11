@@ -1,0 +1,17 @@
+{
+  "skill_name": "web-skill-factory",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我想为一个名为 'my-book-list' 的网站创建一个技能。该网站需要登录后才能查看收藏的图书列表。请帮我初始化这个技能，并利用 CDP 模板编写获取 Cookie 的脚本。",
+      "expected_output": "应该创建一个新的技能目录，其中包含：\n1. SKILL.md (基于模板)\n2. scripts/get_cookie_cdp.py (适配 my-book-list)\n3. config.json\n4. main.py (适配列表功能)",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "我想通过浏览器探测 GitHub 的私有仓库列表 API，并把这个探测和沉淀的过程写成一个新技能。",
+      "expected_output": "应该引导用户使用 DevTools 探测 API，并提供基于工厂模板的建议代码结构。",
+      "files": []
+    }
+  ]
+}
