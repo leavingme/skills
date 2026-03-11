@@ -4,13 +4,16 @@
 
 ## 🚀 核心技能
 
-### 1. 百度网盘助手 (`baidu-netdisk`)
+### 1. 百度网盘助手 (MCP 版) (`baidu-netdisk-mcp`)
+基于官方 MCP 协议构建，支持完整的文件生命周期管理。支持通过授权 URL 自动解析 Access Token。
+
+### 2. 百度网盘助手 (CDP 版) (`baidu-netdisk`)
 支持完整的文件管理功能，特别优化了分享链接的处理。
 - **文件管理**：列表查看、搜索、重命名、移动、删除、创建目录。
 - **分享助手**：自动提取他人分享链接的文件列表，支持一键转存到自己的网盘。
 - **自动登录**：内置 CDP 抓取方案，自动同步浏览器登录态，无需手动输入 BDUSS。
 
-### 2. 本牛云盘专辑管理器 (`benew-album-manager`)
+### 3. 本牛云盘专辑管理器 (`benew-album-manager`)
 针对本牛云盘音频资产的全面自动化管理。
 - **专辑管理**：文件夹与专辑的 CRUD 操作。
 - **音频同步**：本地目录监听、自动上传、自动文件名标准化。
@@ -22,7 +25,8 @@
 
 ```text
 .
-├── baidu-netdisk/            # 百度网盘操作技能
+├── baidu-netdisk-mcp/        # 百度网盘 MCP 技能 (Access Token 版)
+├── baidu-netdisk/            # 百度网盘操作技能 (CDP Cookie 版)
 │   ├── SKILL.md              # 技能指南
 │   └── scripts/              # 核心脚本 (main.py, get_cookie_cdp.py)
 ├── benew-album-manager/      # 本牛云盘管理技能
