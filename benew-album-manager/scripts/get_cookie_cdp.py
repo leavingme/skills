@@ -2,9 +2,40 @@ import os
 import re
 import time
 import requests
+import json
+import subprocess
 
 ENV_PATH = os.path.join(os.getcwd(), ".env.benew")
 CDP_URL = "http://127.0.0.1:9222"
+
+CHROME_PATHS = [
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+]
+
+def launch_chrome():
+    """以 CDP 模式新开一个独立 Chrome 实例"""
+    for path in CHROME_PATHS:
+        if os.path.exists(path):
+            print(f"正在启动新 Chrome 实例: {path}")
+            user_data_dir = "/tmp/chrome-debug-profile-ai"
+            subprocess.Popen(
+                ["open", "-na", path, "--args",
+                 "--remote-debugging-port=9222", f"--user-data-dir={user_data_dir}", "--no-first-run", "https://pan.benewtech.cn"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            for _ in range(15):
+                time.sleep(1)
+                try:
+                    requests.get(f"{CDP_URL}/json", timeout=1)
+                    print("Chrome 启动成功。")
+                    return True
+                except Exception:
+                    pass
+            print("[错误] Chrome 启动超时。")
+            return False
+    return False
 
 def update_env(key, value):
     content = ""
@@ -29,14 +60,16 @@ def fetch_credentials_cdp():
         resp = requests.get(f"{CDP_URL}/json", timeout=2)
         targets = resp.json()
     except Exception as e:
-        print(f"[Warning] 无法连接到本地 Chrome 的 CDP 端口 9222。可能是您的 Chrome 没有使用该参数开启。")
-        print("======> [Fallback] 因为端口未开启，现在尝试降级使用 Playwright 弹出独立窗口的方式来抓取！ <======")
-        try:
-            import get_cookie
-            get_cookie.fetch_credentials()
-        except ImportError:
-            print("未能找到退路脚本 get_cookie.py 或尚未安装 Playwright，脚本终止。")
-        return False
+        print(f"[Warning] 无法连接到本地 Chrome 的 CDP 端口 9222。尝试自动启动新实例...")
+        if launch_chrome():
+            try:
+                resp = requests.get(f"{CDP_URL}/json", timeout=2)
+                targets = resp.json()
+            except Exception:
+                targets = []
+        else:
+            print("[错误] 未能拉起 Chrome 或连接获取超时。")
+            return False
 
     # 寻找本牛云盘的标签页
     benew_target = None
