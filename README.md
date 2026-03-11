@@ -4,6 +4,9 @@
 
 ## 🚀 核心技能
 
+> [!TIP]
+> 这里的技能管理遵循 **[Anthropic Skills 最佳实践](file:///Users/leavingme/GitHub/skills/SKILL_MANAGEMENT.md)** 规范，强调元数据驱动与自包含设计。
+
 ### 1. 百度网盘助手 (MCP 版) (`baidu-netdisk-mcp`)
 基于官方 MCP 协议构建，支持完整的文件生命周期管理。支持通过授权 URL 自动解析 Access Token。
 
