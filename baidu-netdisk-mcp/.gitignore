@@ -2,7 +2,7 @@
 .DS_Store
 __MACOSX/
 
-# Project specific
-config.json
+# Python and Environment
+.venv/
 node_modules/
 *.log
