@@ -44,9 +44,9 @@
 ## 技术说明
 
 ### API 实现
-- **查询和转存功能**：使用百度网盘 REST API（`rest/2.0/xpan`）
-- **文件管理功能**：使用百度网盘 filemanager API（`/api/filemanager`）
-- **bdstoken**：文件管理操作需要额外的 bdstoken，Skill 会自动获取
+- **查询功能**：使用百度网盘 REST API（`rest/2.0/xpan`）
+- **转存与文件管理功能**：使用模拟网页端接口（`/api/filemanager`, `/share/transfer`）
+- **bdstoken**：文件管理和转存操作需要额外的 bdstoken，Skill 会自动获取
 
 ### 认证流程
 1. 使用 BDUSS 和 STOKEN 进行身份认证
@@ -128,14 +128,17 @@ python scripts/main.py list_share share_url=https://pan.baidu.com/s/1xxxxx extra
 ### 转存分享文件
 
 ```bash
-# 转存到默认路径
+# 转存到默认路径 (/我的资源)
 python scripts/main.py transfer share_url=https://pan.baidu.com/s/1xxxxx
 
-# 转存到指定路径
-python scripts/main.py transfer share_url=https://pan.baidu.com/s/1xxxxx save_path=/我的资源/电影
+# 带提取码并转存到指定路径
+python scripts/main.py transfer share_url=https://pan.baidu.com/s/1xxxxx extract_code=abcd save_path=/我的资源/电影
 
-# 带提取码转存
-python scripts/main.py transfer share_url=https://pan.baidu.com/s/1xxxxx extract_code=abcd save_path=/我的资源
+# 精确转存：只转存分享中的特定某个文件 (通过 fsids 指定)
+python scripts/main.py transfer share_url=https://pan.baidu.com/s/1xxxxx fsids=710746060396824
+
+# 目录提取：转存分享链接中指定子目录下的所有内容
+python scripts/main.py transfer share_url=https://pan.baidu.com/s/1xxxxx share_path="/我的资源/子目录"
 ```
 
 ### 创建目录
@@ -208,14 +211,15 @@ python scripts/main.py delete path=/要删除的路径
 ### 错误码 9019
 API 调用受限，请检查网络连接或稍后再试
 
-### 无法获取 bdstoken
+### 无法获取 bdstoken 或 JSON 解析错误
+- 报错 `Expecting value: line 1 column 1` 通常意味着登录凭证已过期
 - 检查 BDUSS 和 STOKEN 是否有效
-- 尝试重新登录百度网盘获取新的凭证
-- 检查网络连接是否正常
+- 尝试通过 `python scripts/get_cookie_cdp.py` 重新登录获取新的凭证
+- 检查网络连接是否能正常访问 pan.baidu.com
 
 ## 版本信息
 
-- **版本**: 1.0.3
+- **版本**: 1.0.4
 - **作者**: MaxStorm Team, leavingme
 - **许可证**: MIT
 - **源码**: https://github.com/leavingme/skills/tree/main/baidu-netdisk

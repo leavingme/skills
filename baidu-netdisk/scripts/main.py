@@ -262,33 +262,56 @@ class BaiduNetdiskAPI:
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
-    def transfer_share(self, share_url: str, extract_code: str = "", save_path: str = "/我的资源"):
-        """转存分享文件到自己的网盘"""
-        # 先提取分享信息
-        extract_result = self.extract_share(share_url, extract_code)
-        if not extract_result['success']:
-            return extract_result
+    def transfer_share(self, share_url: str, extract_code: str = "", save_path: str = "/我的资源", fsids: str = "", share_path: str = ""):
+        """转存分享文件到自己的网盘
         
-        shareid = extract_result.get('shareid')
-        uk = extract_result.get('uk')
-        files = extract_result.get('files', [])
+        :param fsids: 可选，逗号分隔的 fsid 列表。
+        :param share_path: 可选，分享链接内的子目录路径。如果提供，则转存该目录下的文件。
+        """
+        # 使用 list_share 获取指定目录的文件信息及元数据 (shareid, uk, sekey)
+        list_result = self.list_share(share_url, extract_code, share_path)
+        if not list_result['success']:
+            return list_result
         
-        if not files:
-            return {'success': False, 'error': '分享中没有文件'}
+        shareid = list_result.get('shareid')
+        uk = list_result.get('uk')
+        sekey = list_result.get('sekey')
         
-        # 获取 fsid 列表
-        fsids = [f['fs_id'] for f in files if 'fs_id' in f]
+        # 确定要转存的 fsid 列表
+        target_fsids = []
+        if fsids:
+            try:
+                target_fsids = [int(fid.strip()) for fid in str(fsids).split(',') if fid.strip()]
+            except ValueError:
+                return {'success': False, 'error': 'fsids 格式错误，必须是逗号分隔的数字列表'}
+        else:
+            files = list_result.get('files', [])
+            if not files:
+                return {'success': False, 'error': f"分享链接的目录 '{share_path or '根目录'}' 中没有文件"}
+            target_fsids = [f['fs_id'] for f in files if 'fs_id' in f]
         
+        if not target_fsids:
+            return {'success': False, 'error': '未找到有效的待转存文件 ID'}
+            
         # 执行转存
-        url = f"{self.BASE_URL}/share/transfer"
+        bdstoken = self._get_bdstoken()
+        url = "https://pan.baidu.com/share/transfer"
         params = {
             'shareid': shareid,
             'from': uk,
-            'sekey': extract_result.get('sekey', ''),
-            'ondup': 'newcopy'
+            'ondup': 'newcopy',
+            'async': 0,
+            'channel': 'chunlei',
+            'web': 1,
+            'app_id': 250528,
+            'bdstoken': bdstoken or '',
+            'clienttype': 0
         }
+        if sekey:
+            params['sekey'] = sekey
+            
         data = {
-            'fsidlist': json.dumps(fsids),
+            'fsidlist': json.dumps(target_fsids),
             'path': save_path
         }
         
@@ -297,15 +320,16 @@ class BaiduNetdiskAPI:
             result = resp.json()
             
             if result.get('errno') == 0:
+                source_desc = f"目录 '{share_path}'" if share_path else "根目录"
                 return {
                     'success': True,
-                    'message': f'成功转存 {len(fsids)} 个文件到 {save_path}'
+                    'message': f'成功从分享{source_desc}转存 {len(target_fsids)} 个文件到 {save_path}'
                 }
             else:
-                return {'success': False, 'error': f"转存失败: {result.get('errno')}"}
+                return {'success': False, 'error': f"转存失败，错误码: {result.get('errno')}"}
                 
         except Exception as e:
-            return {'success': False, 'error': str(e)}
+            return {'success': False, 'error': f"转存异常: {str(e)} - 响应内容: {resp.text if 'resp' in locals() else '无'}"}
     
     def create_dir(self, path: str):
         """创建目录"""
@@ -565,7 +589,9 @@ def main():
         result = api.transfer_share(
             share_url=params.get('share_url', ''),
             extract_code=params.get('extract_code', ''),
-            save_path=params.get('save_path', '/我的资源')
+            save_path=params.get('save_path', '/我的资源'),
+            fsids=params.get('fsids', ''),
+            share_path=params.get('share_path', '')
         )
     elif action == 'mkdir':
         result = api.create_dir(

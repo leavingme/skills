@@ -1,6 +1,6 @@
 {
   "name": "baidu-netdisk",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "百度网盘操作Skill - 支持完整的文件管理功能：列表、搜索、分享提取、转存、创建目录、重命名、移动、删除",
   "author": "MaxStorm Team, leavingme",
   "license": "MIT",
