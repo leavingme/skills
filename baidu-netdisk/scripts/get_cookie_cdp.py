@@ -185,7 +185,7 @@ def fetch_cookies_cdp():
     # 保存到 config.json
     config = load_config()
     for name, value in found.items():
-        config[name.lower()] = value
+        config[name] = value
         print(f"[成功] 已捕获 {name}")
 
     save_config(config)

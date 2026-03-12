@@ -530,8 +530,8 @@ def main():
     except:
         config = {}
     
-    bduss = config.get('bduss', os.getenv('BAIDU_BDUSS', ''))
-    stoken = config.get('stoken', os.getenv('BAIDU_STOKEN', ''))
+    bduss = config.get('BDUSS', os.getenv('BAIDU_BDUSS', ''))
+    stoken = config.get('STOKEN', os.getenv('BAIDU_STOKEN', ''))
     
     if not bduss or not stoken:
         print(json.dumps({
