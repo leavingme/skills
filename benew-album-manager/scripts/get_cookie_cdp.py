@@ -44,7 +44,9 @@ def update_env(key, value):
             content = f.read()
 
     if f"{key}=" in content:
+        # 兼容引号或无引号的情况
         content = re.sub(f'{key}=[\'"].*?[\'"]', f'{key}={repr(value)}', content)
+        content = re.sub(f'{key}=.*?\n', f'{key}={repr(value)}\n', content)
     else:
         content += f'\n{key}={repr(value)}\n'
 
@@ -99,19 +101,15 @@ def fetch_credentials_cdp():
 
     print("已接管网页，正在读取 Cookies 和网络请求参数...")
     
-    # 使用 websocket 库与 Chrome 通信
-    # 轻量级实现，如果不希望引入 websocket-client，可以在这之前让 AI 提示安装
     try:
         import websocket
     except ImportError:
-        print("缺少 websocket-client 库。正在尝试通过终端提示您或自动安装...")
-        print("请执行: pip install websocket-client 然后重试。")
+        print("缺少 websocket-client 库。请执行: pip install websocket-client")
         return False
 
     ws = websocket.create_connection(ws_url, suppress_origin=True)
     
-    # 1. 直接获取网页上的所有 Cookie (不需要刷新)
-    # 发送 Network.getCookies 命令
+    # 1. 直接获取网页上的所有 Cookie
     ws.send(json.dumps({
         "id": 1,
         "method": "Network.getCookies",
@@ -143,11 +141,10 @@ def fetch_credentials_cdp():
     start_time = time.time()
     
     # 强制刷新当前云盘页面以触发带有 familyId 的内部 API 请求
-    print("正在静默刷新您的当前网页以拦截内部参数包（您无需操作）...")
+    print("正在静默刷新您的当前网页以拦截内部参数包...")
     ws.send(json.dumps({"id": 3, "method": "Page.reload"}))
     
-    print("监听本牛云盘鉴权流量中...")
-    # 最多等10秒
+    # 最多等15秒
     while time.time() - start_time < 15:
         ws.settimeout(1.0)
         try:
@@ -158,19 +155,13 @@ def fetch_credentials_cdp():
                 if match:
                     captured_family_id = match.group(1)
                     update_env("FAMILY_ID", captured_family_id)
-                    print(f"成功通过 Chrome CDP 拦截到网络请求，捕获 FAMILY_ID: {captured_family_id}")
+                    print(f"成功捕获 FAMILY_ID: {captured_family_id}")
                     break
         except websocket.WebSocketTimeoutException:
             continue
             
     ws.close()
-    
-    if captured_cookie and captured_family_id:
-        print("所有必要凭证捕获完成!")
-    else:
-        print("捕获结束，仍存在未获取的凭证。如果 Cookie 已经捕获成功，你可以手动去 .env 填写剩余的参数。")
     return True
 
 if __name__ == "__main__":
-    import json
     fetch_credentials_cdp()
