@@ -5,22 +5,26 @@
 ## 🚀 核心技能
 
 > [!TIP]
-> 这里的技能管理遵循 **[Anthropic Skills 最佳实践](file:///Users/leavingme/GitHub/skills/SKILL_MANAGEMENT.md)** 规范，强调元数据驱动与自包含设计。
+> 这里的技能管理遵循 **[Anthropic Skills 最佳实践](./SKILL_MANAGEMENT.md)** 规范，强调元数据驱动与自包含设计。
 
-### 1. 百度网盘助手 (MCP 版) (`baidu-netdisk-mcp`)
-基于官方 MCP 协议构建，支持完整的文件生命周期管理。支持通过授权 URL 自动解析 Access Token。
-
-### 2. 百度网盘助手 (CDP 版) (`baidu-netdisk`)
+### 1. 百度网盘助手 (`baidu-netdisk`)
 支持完整的文件管理功能，特别优化了分享链接的处理。
 - **文件管理**：列表查看、搜索、重命名、移动、删除、创建目录。
 - **分享助手**：自动提取他人分享链接的文件列表，支持一键转存到自己的网盘。
+- **自动化操作**：结合 Python API (scripts/main.py) 和 BaiduPCS-Go 命令行工具，兼顾结构化输出与超大文件传输。
 - **自动登录**：内置 CDP 抓取方案，自动同步浏览器登录态，无需手动输入 BDUSS。
 
-### 3. 本牛云盘专辑管理器 (`benew-album-manager`)
+### 2. 本牛云盘专辑管理器 (`benew-album-manager`)
 针对本牛云盘音频资产的全面自动化管理。
 - **专辑管理**：文件夹与专辑的 CRUD 操作。
 - **音频同步**：本地目录监听、自动上传、自动文件名标准化。
 - **深度优化**：智能去重、集数自动排序、统一专辑封面。
+
+### 3. Web 技能工厂 (`web-skill-factory`)
+专为开发者设计的“技能生产线”，用于快速为任何 Web 服务构建 AI 技能。
+- **标准化流程**：提供“探测-提取-实现-文档”的全套工业级 SOP。
+- **内建模板**：集成 CDP 自动抓取 Cookie、API 客户端封装、SKILL.md 编写模板。
+- **最佳实践**：自动生成的技能天然支持凭证异常自动修复、环境嗅探等高级特性。
 
 ---
 
@@ -28,14 +32,18 @@
 
 ```text
 .
-├── baidu-netdisk-mcp/        # 百度网盘 MCP 技能 (Access Token 版)
-├── baidu-netdisk/            # 百度网盘操作技能 (CDP Cookie 版)
+├── baidu-netdisk/            # 百度网盘操作技能 (CDP + BaiduPCS-Go)
 │   ├── SKILL.md              # 技能指南
 │   └── scripts/              # 核心脚本 (main.py, get_cookie_cdp.py)
 ├── benew-album-manager/      # 本牛云盘管理技能
 │   ├── SKILL.md              # 技能指南
-│   └── scripts/              # 核心脚本 (cloud_manager.py, sync.py, 等)
-├── .gitignore                # 忽略敏感配置 (.env.benew, config.json)
+│   └── scripts/              # 核心脚本
+├── web-skill-factory/        # Web 技能工厂 (用于快速生成新技能)
+│   ├── SKILL.md              # 工厂指南
+│   └── templates/            # 技能开发模板
+├── SKILL_MANAGEMENT.md       # 技能管理最佳实践总结
+├── EVOLUTION.md              # 项目演进全景记录
+├── .gitignore                # 忽略敏感配置
 └── README.md                 # 本说明文件
 ```
 
@@ -50,11 +58,13 @@
 - **本牛云盘**：
   - "同步本地 '故事会' 文件夹到云盘专辑。"
   - "清理专辑内的重复项并修正排序。"
+- **创建新技能**：
+  - "我想给 X 网站做一个技能，请调用技能工厂帮我探测 API。"
 
 ### 2. 安全与凭证
 本项目采用 **“本地凭证，自动抓取”** 的原则：
 - **CDP 抓取**：AI 会在必要时自动唤起浏览器调试模式获取 Cookie，你无需手动提供账号密码。
-- **数据安全**：所有敏感信息（`config.json`, `.env.benew`）均保存在本地，且已通过 `.gitignore` 排除，不会被上传。
+- **数据安全**：所有敏感信息均保存在本地，且已通过 `.gitignore` 排除，不会被上传。
 
 ## 安全与隐私 ⚠️
 
