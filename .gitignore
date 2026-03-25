@@ -3,3 +3,4 @@
 baidu-netdisk/config.json
 **/__pycache__/
 *.pyc
+**/.cookie_cache.json
